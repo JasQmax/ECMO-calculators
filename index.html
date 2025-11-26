@@ -12,8 +12,10 @@
             background: linear-gradient(180deg, #f7faff 0%, #f4f6fb 100%);
             color: #0b3a70;
         }
+        /* Use border-box so padding doesn't cause overflow of the card */
+        *, *::before, *::after { box-sizing: border-box; }
         .app-shell {
-            max-width: 640px;
+            max-width: 760px;
             margin: 0 auto;
             padding: 24px;
         }
@@ -22,20 +24,30 @@
             padding: 24px 16px 8px;
         }
         .app-header h1 {
-            margin: 0 0 4px;
+            margin: 0 0 12px;
             font-size: 1.6em;
-            color: #0b3a70;
+            color: #fff;
             position: relative;
             display: inline-block;
+            padding: 8px 14px; /* colored padding around title */
+            border-radius: 10px;
+            background: linear-gradient(90deg, #28a745 0%, #4cae4c 40%, #007bff 100%);
+            box-shadow: 0 6px 18px rgba(11,58,112,0.12);
+            line-height: 1.1;
         }
-        .app-header h1::after {
-            content: "";
-            display: block;
-            height: 4px;
-            width: 60%;
-            margin: 8px auto 0;
-            border-radius: 2px;
-            background: linear-gradient(90deg, #28a745 0%, #007bff 100%);
+        /* remove the small accent line (it's inside the pill) */
+        .app-header h1::after { display: none; }
+
+        /* Make the title pill expand to full width on small screens for better usability */
+        @media (max-width: 520px) {
+            .app-header h1 {
+                display: block;
+                width: calc(100% - 48px);
+                margin: 0 auto 12px;
+                padding: 12px 16px;
+                box-sizing: border-box;
+                border-radius: 10px;
+            }
         }
         .app-header p {
             margin: 0;
@@ -48,7 +60,8 @@
             border-radius: 10px;
             box-shadow: 0 8px 24px rgba(11,58,112,0.08);
             margin: 16px auto;
-            max-width: 640px;
+            max-width: 720px;
+            width: 100%;
         }
         h2 {
             text-align: left;
@@ -84,12 +97,15 @@
             .button-row .btn-primary,
             .button-row .btn-secondary { flex-basis: calc(50% - 5px); }
         }
-        input[type="number"], button {
+        /* Inputs get a slightly larger font for readability; buttons styled separately below */
+        input[type="number"] {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
             border: 1px solid #ccc;
             border-radius: 8px;
+            font-size: 1.05em;
+            line-height: 1.2;
         }
         label { font-weight: 600; color: #163c76; }
         button {
@@ -97,15 +113,28 @@
             border: none;
             cursor: pointer;
             margin-bottom: 10px;
-            font-size: 1.05em; /* larger font for action buttons */
         }
-        .btn-primary { background-color: #28a745; }
+        /* Larger primary buttons (Calculate) */
+        .btn-primary {
+            background-color: #28a745;
+            padding: 14px 16px;
+            font-size: 1.15em; /* slightly bigger */
+            min-height: 52px;
+            border-radius: 10px;
+        }
         .btn-primary:hover {
             background-color: #218838;
             transform: translateY(-1px);
             box-shadow: 0 6px 16px rgba(8,61,119,0.16);
         }
-        .btn-secondary { background-color: #7c4dff; }
+        /* Keep secondary (Reset) slightly smaller */
+        .btn-secondary {
+            background-color: #7c4dff;
+            padding: 10px 12px;
+            font-size: 1.02em;
+            min-height: 44px;
+            border-radius: 8px;
+        }
         .btn-secondary:hover {
             background-color: #5e35b1;
             transform: translateY(-1px);
@@ -138,6 +167,12 @@
             background-color: #0069d9;
         }
 
+        /* Formula button spacing helper */
+        .formula-btn {
+            margin-bottom: 14px; /* create more space below the formula button */
+            display: inline-block;
+        }
+
         /* Modal styles */
         .modal {
             display: none; /* hidden by default */
@@ -161,6 +196,22 @@
             border-radius: 6px;
             max-width: 480px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+        /* Larger modal sizing specifically for the equation modal so long formulas fit */
+        #eqModal .modal-content {
+            max-width: 900px;
+            width: calc(100% - 48px);
+            padding: 22px;
+        }
+        /* Ensure LaTeX/katex display and preformatted content wrap sensibly or scroll */
+        #eqModal pre, #eqModal .katex-display, #eqModal .katex { 
+            overflow-x: auto;
+            white-space: normal;
+            word-break: break-word;
+        }
+        /* On very small screens keep modal comfortable */
+        @media (max-width: 600px) {
+            #eqModal .modal-content { padding: 16px; width: calc(100% - 32px); }
         }
         .modal-content h3 {
             margin-top: 0;
@@ -205,7 +256,71 @@
             border-color: #dc3545;
             box-shadow: 0 0 0 3px rgba(220,53,69,0.15);
         }
+
+        /* Result box styling (colored text box for calculation results) */
+        .result {
+            background-color: #e8f6ff; /* light-blue background */
+            border: 1px solid #c9defa;
+            color: #0b3a70; /* dark blue text for contrast */
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            font-weight: 600;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Warning variant: pink background with exclamation icon */
+        .result--warning {
+            background-color: #fff0f6; /* light pink */
+            border: 1px solid #ffc1da; /* pink border */
+            color: #7a0026; /* dark pink/red text for contrast */
+            position: relative;
+        }
+        .result--warning::before {
+            content: "⚠"; /* exclamation / warning icon */
+            margin-right: 8px;
+            font-weight: 700;
+            display: inline-block;
+        }
+        /* Footer and disclaimer */
+        .app-footer {
+            text-align: center;
+            color: #4a5568;
+            font-size: 0.82em; /* slightly smaller for separation from disclaimer */
+            margin-top: 8px;
+        }
+        .disclaimer {
+            margin-top: 12px;
+            background: #f8fafc;
+            border: 1px solid #e6e9ef;
+            color: #374151;
+            font-size: 0.88em;
+            padding: 12px 14px;
+            border-radius: 8px;
+            line-height: 1.35;
+        }
     </style>
+    <!-- KaTeX for rendering LaTeX equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script>
+        // Small helper to render LaTeX to HTML using KaTeX if available, otherwise fallback to preformatted text
+        function _escapeHtml(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        function renderLatex(latex) {
+            if (window.katex && typeof katex.renderToString === 'function') {
+                try {
+                    return katex.renderToString(latex, { throwOnError: false, displayMode: true });
+                } catch (e) {
+                    return '<pre>' + _escapeHtml(latex) + '</pre>';
+                }
+            }
+            return '<pre>' + _escapeHtml(latex) + '</pre>';
+        }
+    </script>
 </head>
 <body>
 
@@ -217,6 +332,9 @@
 
     <div class="calculator">
     <h2>Final Hct Calculator</h2>
+    <div style="margin-top:6px;">
+        <button type="button" class="ref-btn formula-btn" onclick="openEquation('hct')" aria-haspopup="dialog" aria-controls="eqModal" aria-label="Show formula for Final Hct">ƒ Formula</button>
+    </div>
     <label for="bodyWeight">Body Weight (kg):</label>
     <input type="number" id="bodyWeight" step="0.1" required>
 
@@ -243,6 +361,9 @@
 
     <div class="calculator">
     <h2>Donor Blood Volume Calculator</h2>
+    <div style="margin-top:6px;">
+        <button type="button" class="ref-btn formula-btn" onclick="openEquation('donor')" aria-haspopup="dialog" aria-controls="eqModal" aria-label="Show formula for Donor Blood Volume">ƒ Formula</button>
+    </div>
     <p style="font-size:0.95em; color:#555; margin-top:-6px;">Donor Hct assumed to be 50%.</p>
     <label for="desiredHct">Desired Final Hct (%):</label>
     <input type="number" id="desiredHct" step="0.1" min="0" max="100" required>
@@ -255,7 +376,16 @@
     <div class="result" id="donorResult" role="status" aria-live="polite"></div>
     </div>
 
-    <div class="app-footer">This tool provides approximate values. Confirm with clinical protocols.</div>
+    <div class="disclaimer" aria-live="polite">
+        <strong>Medical disclaimer:</strong> This calculator is provided for informational purposes only and does not constitute medical advice, diagnosis, or treatment. Results are approximate and may not account for clinical context or patient-specific factors. Always consult a qualified healthcare professional and follow institutional protocols before making clinical decisions. The authors assume no liability for outcomes based on use of this tool.
+    </div>
+    <div class="app-footer">
+        <a href="https://jasqmax.github.io/ECMO-calculators/">ECMO calculator</a> © 2025 by Jasmin Tong is licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>
+    <img src="assets/icons/cc.svg" alt="Creative Commons" style="max-width: 1em;max-height:1em;margin-left: .2em;">
+    <img src="assets/icons/by.svg" alt="BY" style="max-width: 1em;max-height:1em;margin-left: .2em;">
+    <img src="assets/icons/nc.svg" alt="NC" style="max-width: 1em;max-height:1em;margin-left: .2em;">
+    <img src="assets/icons/sa.svg" alt="SA" style="max-width: 1em;max-height:1em;margin-left: .2em;">
+    </div>
 </div>
 
 <!-- Reference Modal -->
@@ -283,6 +413,15 @@
     
 </div>
 
+    <!-- Equation Modal (shows formula for each calculator) -->
+    <div id="eqModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="eqTitle">
+        <div class="modal-content" tabindex="-1">
+            <span class="close" onclick="closeEquation()" aria-label="Close">&times;</span>
+            <h3 id="eqTitle">Formulas</h3>
+            <div id="eqContent" style="margin-top:8px; color:#163c76; font-size:0.95em;"></div>
+        </div>
+    </div>
+
 <script>
     function calculateHCT() {
         const bodyWeight = parseFloat(document.getElementById('bodyWeight').value);
@@ -290,19 +429,23 @@
         const initialHctInput = document.getElementById('initialHct');
         const initialHctPct = parseFloat(initialHctInput.value);
         const ecmoVolume = parseFloat(document.getElementById('ecmoVolume').value);
+        const resultEl = document.getElementById('result');
 
         // Clear previous invalid state
         initialHctInput.classList.remove('invalid');
+        resultEl.classList.remove('result--warning');
 
         if (isNaN(bodyWeight) || isNaN(bodyWeightConstant) || isNaN(initialHctPct) || isNaN(ecmoVolume)) {
-            document.getElementById('result').innerText = "Please enter valid numbers.";
+            resultEl.innerText = "Please enter valid numbers.";
+            resultEl.classList.add('result--warning');
             if (isNaN(initialHctPct)) initialHctInput.classList.add('invalid');
             return;
         }
 
         // Hct must be 0–100%
         if (initialHctPct < 0 || initialHctPct > 100) {
-            document.getElementById('result').innerText = "Initial Hct must be between 0 and 100%.";
+            resultEl.innerText = "Initial Hct must be between 0 and 100%.";
+            resultEl.classList.add('result--warning');
             initialHctInput.classList.add('invalid');
             return;
         }
@@ -315,7 +458,9 @@
         // Calculate final HCT
         const finalHCT = (patientBloodVolume * initialHct) / (patientBloodVolume + ecmoVolume);
 
-        document.getElementById('result').innerText = "Final HCT: " + (finalHCT * 100).toFixed(2) + " %";
+        // Success — clear any warning state
+        resultEl.classList.remove('result--warning');
+        resultEl.innerText = "Final HCT: " + (finalHCT * 100).toFixed(2) + " %";
     }
 
     function resetFields() {
@@ -323,10 +468,18 @@
         document.getElementById('bodyWeightConstant').value = '';
         document.getElementById('initialHct').value = '';
         document.getElementById('ecmoVolume').value = '';
-        document.getElementById('result').innerText = '';
+        const resultEl = document.getElementById('result');
+        const donorResultEl = document.getElementById('donorResult');
+        if (resultEl) {
+            resultEl.innerText = '';
+            resultEl.classList.remove('result--warning');
+        }
+        if (donorResultEl) {
+            donorResultEl.innerText = '';
+            donorResultEl.classList.remove('result--warning');
+        }
         document.getElementById('desiredHct').value = '';
         document.getElementById('donorHct').value = '50';
-        document.getElementById('donorResult').innerText = '';
     }
 
     // Modal controls
@@ -349,16 +502,21 @@
 
     // Close when clicking outside content
     window.addEventListener('click', function(event) {
-        const modal = document.getElementById('refModal');
-        if (modal.classList.contains('show') && event.target === modal) {
+        const refModal = document.getElementById('refModal');
+        const eqModal = document.getElementById('eqModal');
+        if (refModal && refModal.classList.contains('show') && event.target === refModal) {
             closeReference();
+        }
+        if (eqModal && eqModal.classList.contains('show') && event.target === eqModal) {
+            closeEquation();
         }
     });
 
-    // Close on Escape key
+    // Close on Escape key (close any open modal)
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             closeReference();
+            closeEquation();
         }
     });
 
@@ -492,6 +650,33 @@
             }
         });
     })();
+
+    // Equation modal controls
+    function openEquation(which) {
+        const modal = document.getElementById('eqModal');
+        const content = document.getElementById('eqContent');
+        if (!modal || !content) return;
+        if (which === 'hct') {
+                const latex = String.raw`\\mathrm{finalHCT} = \frac{\mathrm{patientBloodVolume} \times \mathrm{initialHct}}{\mathrm{patientBloodVolume} + \mathrm{ecmoVolume}}\\\\\mathrm{patientBloodVolume} = \mathrm{bodyWeight} \times \mathrm{bodyWeightConstant}`;
+                content.innerHTML = '<p><strong>Final HCT formula</strong></p>' + renderLatex(latex) + '<p style="margin-top:8px;">Note: initialHct, desiredHct and donorHct are percentages in the UI (e.g. 50%). Convert to decimals for the formula (50% → 0.5).</p>';
+        } else if (which === 'donor') {
+                const latex = String.raw`V_{\mathrm{donor}} = \dfrac{(\mathrm{PBV} + \mathrm{ECMO\_vol}) \times \mathrm{desiredHct} - (\mathrm{PBV} \times \mathrm{patientHct})}{\mathrm{donorHct}}\\\\\mathrm{PBV} = \mathrm{bodyWeight} \times \mathrm{bodyWeightConstant}`;
+                content.innerHTML = '<p><strong>Donor Blood Volume formula</strong></p>' + renderLatex(latex) + '<p style="margin-top:8px;">All Hct values must be used as decimals in the calculation (e.g. 50% → 0.5).</p>';
+        } else {
+            content.innerHTML = '<p>No formula available.</p>';
+        }
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
+        // focus content for screen-readers
+        setTimeout(() => { const mc = modal.querySelector('.modal-content'); if (mc) mc.focus(); }, 0);
+    }
+
+    function closeEquation() {
+        const modal = document.getElementById('eqModal');
+        if (!modal) return;
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+    }
 </script>
 
 </body>
