@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECMO Final Hct Calculator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(180deg, #f7faff 0%, #f4f6fb 100%);
+            color: #0b3a70;
+        }
+        .app-shell {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .app-header {
+            text-align: center;
+            padding: 24px 16px 8px;
+        }
+        .app-header h1 {
+            margin: 0 0 4px;
+            font-size: 1.6em;
+            color: #0b3a70;
+            position: relative;
+            display: inline-block;
+        }
+        .app-header h1::after {
+            content: "";
+            display: block;
+            height: 4px;
+            width: 60%;
+            margin: 8px auto 0;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #28a745 0%, #007bff 100%);
+        }
+        .app-header p {
+            margin: 0;
+            color: #4a6ea8;
+            font-size: 0.95em;
+        }
+        .calculator {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(11,58,112,0.08);
+            margin: 16px auto;
+            max-width: 640px;
+        }
+        h2 {
+            text-align: left;
+            font-size: 1.25em;
+            margin: 0 0 12px;
+            color: #0b3a70;
+            position: relative;
+            padding-bottom: 6px;
+        }
+        h2::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            height: 3px;
+            width: 80px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #28a745 0%, #4cae4c 50%, #007bff 100%);
+        }
+
+        /* Responsive button row for primary/secondary actions */
+        .button-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+        .button-row .btn-primary,
+        .button-row .btn-secondary {
+            flex: 1 1 220px; /* side-by-side on wide screens, stack on narrow */
+        }
+        @media (min-width: 560px) {
+            .button-row .btn-primary,
+            .button-row .btn-secondary { flex-basis: calc(50% - 5px); }
+        }
+        input[type="number"], button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        label { font-weight: 600; color: #163c76; }
+        button {
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 10px;
+            font-size: 1.05em; /* larger font for action buttons */
+        }
+        .btn-primary { background-color: #28a745; }
+        .btn-primary:hover {
+            background-color: #218838;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(8,61,119,0.16);
+        }
+        .btn-secondary { background-color: #7c4dff; }
+        .btn-secondary:hover {
+            background-color: #5e35b1;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(8,61,119,0.16);
+        }
+
+        /* Inline label + action */
+        .inline-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .inline-label > label { flex: 1; }
+        .button-group { display: flex; gap: 6px; }
+
+        /* Secondary reference button overrides */
+        .ref-btn {
+            width: auto;
+            padding: 6px 10px;
+            margin: 0;
+            background-color: #007bff;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 0.9em;
+            box-shadow: none;
+        }
+        .ref-btn:hover {
+            background-color: #0069d9;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none; /* hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            padding: 20px;
+        }
+        .modal.show { display: block; }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            max-width: 480px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+        .modal-content h3 {
+            margin-top: 0;
+            text-align: center;
+        }
+        .close {
+            float: right;
+            font-size: 1.4em;
+            font-weight: bold;
+            cursor: pointer;
+            color: #666;
+        }
+        .close:hover { color: #000; }
+
+        .ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .ref-table th, .ref-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .ref-table thead th {
+            background-color: #f7f7f7;
+        }
+
+        .ref-table tbody tr { cursor: pointer; }
+        .ref-table tbody tr:hover { background-color: #eef6ff; }
+        .ref-table tbody tr.suggested { background-color: #e6f0ff; outline: 2px solid #99c2ff; }
+
+        /* Subtle flash when field is auto-filled */
+        @keyframes flash {
+            0% { box-shadow: 0 0 0 3px rgba(0,123,255,0.35); }
+            100% { box-shadow: none; }
+        }
+        .input-flash { animation: flash 900ms ease-out; }
+
+        /* Invalid field highlight */
+        .invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 3px rgba(220,53,69,0.15);
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+    <div class="app-header">
+        <h1>ECMO Calculators</h1>
+        <p>Final hematocrit and donor blood volume estimations</p>
+    </div>
+
+    <div class="calculator">
+    <h2>Final Hct Calculator</h2>
+    <label for="bodyWeight">Body Weight (kg):</label>
+    <input type="number" id="bodyWeight" step="0.1" required>
+
+    <div class="inline-label">
+        <label for="bodyWeightConstant">Body Weight Constant (mL/kg):</label>
+        <div class="button-group">
+            <button type="button" class="ref-btn" onclick="openReference()" aria-haspopup="dialog" aria-controls="refModal" aria-label="Open blood volume reference chart">📘 Reference</button>
+            <button type="button" class="ref-btn" onclick="suggestForCurrentWeight()" aria-label="Suggest body weight constant for current weight">✨ Suggest for current weight</button>
+        </div>
+    </div>
+    <input type="number" id="bodyWeightConstant" step="0.1" required>
+
+    <label for="initialHct">Initial Patient Hct (%):</label>
+    <input type="number" id="initialHct" step="0.1" min="0" max="100" required>
+
+    <label for="ecmoVolume">ECMO Volume (mL):</label>
+    <input type="number" id="ecmoVolume" step="0.1" required>
+
+    <button class="btn-primary" onclick="calculateHCT()" aria-label="Calculate final hematocrit">Calculate HCT</button>
+    <button class="btn-secondary" onclick="resetFields()" aria-label="Reset all fields">Reset</button>
+
+    <div class="result" id="result" role="status" aria-live="polite"></div>
+    </div>
+
+    <div class="calculator">
+    <h2>Donor Blood Volume Calculator</h2>
+    <p style="font-size:0.95em; color:#555; margin-top:-6px;">Donor Hct assumed to be 50%.</p>
+    <label for="desiredHct">Desired Final Hct (%):</label>
+    <input type="number" id="desiredHct" step="0.1" min="0" max="100" required>
+
+    <label for="donorHct">Donor Hct (%):</label>
+    <input type="number" id="donorHct" step="0.1" value="50" min="0" max="100" required>
+
+    <button class="btn-primary" onclick="calculateDonorBloodVolume()" aria-label="Calculate donor blood volume needed">Calculate Donor Blood Volume</button>
+
+    <div class="result" id="donorResult" role="status" aria-live="polite"></div>
+    </div>
+
+    <div class="app-footer">This tool provides approximate values. Confirm with clinical protocols.</div>
+</div>
+
+<!-- Reference Modal -->
+<div id="refModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="refTitle">
+    <div class="modal-content">
+        <span class="close" onclick="closeReference()" aria-label="Close">&times;</span>
+        <h3 id="refTitle">Blood Volume Reference (mL/kg)</h3>
+        <table class="ref-table" aria-describedby="refTitle">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>mL/kg</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr data-constant="70" tabindex="0" aria-label="> 45 kilograms: 70 milliliters per kilogram"><td>&gt; 45 kg</td><td>70</td></tr>
+                <tr data-constant="75" tabindex="0" aria-label="21 to 45 kilograms: 75 milliliters per kilogram"><td>21–45 kg</td><td>75</td></tr>
+                <tr data-constant="80" tabindex="0" aria-label="11 to 20 kilograms: 80 milliliters per kilogram"><td>11–20 kg</td><td>80</td></tr>
+                <tr data-constant="85" tabindex="0" aria-label="5 to 10 kilograms: 85 milliliters per kilogram"><td>5–10 kg</td><td>85</td></tr>
+                <tr data-constant="83" tabindex="0" aria-label="Newborn 24 hours: 83 milliliters per kilogram"><td>Newborn (24 hr)</td><td>83</td></tr>
+                <tr data-constant="76" tabindex="0" aria-label="Newborn 15 to 30 minutes: 76 milliliters per kilogram"><td>Newborn (15–30 min)</td><td>76</td></tr>
+            </tbody>
+        </table>
+    </div>
+    
+</div>
+
+<script>
+    function calculateHCT() {
+        const bodyWeight = parseFloat(document.getElementById('bodyWeight').value);
+        const bodyWeightConstant = parseFloat(document.getElementById('bodyWeightConstant').value);
+        const initialHctInput = document.getElementById('initialHct');
+        const initialHctPct = parseFloat(initialHctInput.value);
+        const ecmoVolume = parseFloat(document.getElementById('ecmoVolume').value);
+
+        // Clear previous invalid state
+        initialHctInput.classList.remove('invalid');
+
+        if (isNaN(bodyWeight) || isNaN(bodyWeightConstant) || isNaN(initialHctPct) || isNaN(ecmoVolume)) {
+            document.getElementById('result').innerText = "Please enter valid numbers.";
+            if (isNaN(initialHctPct)) initialHctInput.classList.add('invalid');
+            return;
+        }
+
+        // Hct must be 0–100%
+        if (initialHctPct < 0 || initialHctPct > 100) {
+            document.getElementById('result').innerText = "Initial Hct must be between 0 and 100%.";
+            initialHctInput.classList.add('invalid');
+            return;
+        }
+
+        const initialHct = initialHctPct / 100; // Convert percentage to decimal
+
+        // Calculate patient blood volume in mL
+        const patientBloodVolume = bodyWeight * bodyWeightConstant;
+        
+        // Calculate final HCT
+        const finalHCT = (patientBloodVolume * initialHct) / (patientBloodVolume + ecmoVolume);
+
+        document.getElementById('result').innerText = "Final HCT: " + (finalHCT * 100).toFixed(2) + " %";
+    }
+
+    function resetFields() {
+        document.getElementById('bodyWeight').value = '';
+        document.getElementById('bodyWeightConstant').value = '';
+        document.getElementById('initialHct').value = '';
+        document.getElementById('ecmoVolume').value = '';
+        document.getElementById('result').innerText = '';
+        document.getElementById('desiredHct').value = '';
+        document.getElementById('donorHct').value = '50';
+        document.getElementById('donorResult').innerText = '';
+    }
+
+    // Modal controls
+    function openReference() {
+        const modal = document.getElementById('refModal');
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
+        const focusRow = highlightReferenceForWeight();
+        if (focusRow) {
+            // Slight delay helps some browsers ensure element is focusable/visible
+            setTimeout(() => focusRow.focus(), 0);
+        }
+    }
+
+    function closeReference() {
+        const modal = document.getElementById('refModal');
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    // Close when clicking outside content
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('refModal');
+        if (modal.classList.contains('show') && event.target === modal) {
+            closeReference();
+        }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeReference();
+        }
+    });
+
+    // Suggest constant based on current weight
+    function computeSuggestedConstant(weightKg) {
+        if (isNaN(weightKg) || weightKg <= 0) return null;
+        if (weightKg > 45) return 70;       // > 45 kg
+        if (weightKg >= 21) return 75;      // 21–45 kg
+        if (weightKg >= 11) return 80;      // 11–20 kg
+        if (weightKg >= 5) return 85;       // 5–10 kg
+        // < 5 kg: requires newborn-specific context
+        return null;
+    }
+
+    // Highlight suggested row(s) in the Reference modal based on current weight
+    function highlightReferenceForWeight() {
+        const tbody = document.querySelector('#refModal .ref-table tbody');
+        if (!tbody) return null;
+        // clear any previous highlights
+        tbody.querySelectorAll('tr.suggested').forEach(tr => tr.classList.remove('suggested'));
+
+        const weight = parseFloat(document.getElementById('bodyWeight').value);
+        if (isNaN(weight) || weight <= 0) return null;
+
+        // For < 5 kg, highlight both newborn options, focus the first
+        if (weight < 5) {
+            const newborn24 = tbody.querySelector('tr[data-constant="83"]');
+            const newborn15 = tbody.querySelector('tr[data-constant="76"]');
+            if (newborn24) newborn24.classList.add('suggested');
+            if (newborn15) newborn15.classList.add('suggested');
+            return newborn24 || newborn15 || null;
+        }
+
+        const suggested = computeSuggestedConstant(weight);
+        if (suggested == null) return null;
+        const row = tbody.querySelector(`tr[data-constant="${suggested}"]`);
+        if (row) row.classList.add('suggested');
+        return row || null;
+    }
+
+    // Calculate donor blood volume required to reach desired final Hct
+    // Formula: V_donor = ( (PBV + ECMO_vol) * Desired_Hct - (PBV * Patient_Hct) ) / Donor_Hct
+    // Hct values are decimals in calculation (e.g., 0.5 for 50%)
+    function calculateDonorBloodVolume() {
+        const bodyWeight = parseFloat(document.getElementById('bodyWeight').value);
+        const bodyWeightConstant = parseFloat(document.getElementById('bodyWeightConstant').value);
+        const patientHctPct = parseFloat(document.getElementById('initialHct').value);
+        const desiredHctPct = parseFloat(document.getElementById('desiredHct').value);
+        const donorHctPct = parseFloat(document.getElementById('donorHct').value);
+        const ecmoVolume = parseFloat(document.getElementById('ecmoVolume').value);
+
+        if (isNaN(bodyWeight) || isNaN(bodyWeightConstant) || isNaN(patientHctPct) || isNaN(desiredHctPct) || isNaN(donorHctPct) || isNaN(ecmoVolume)) {
+            document.getElementById('donorResult').innerText = 'Please enter valid numbers for weight, constant, patient Hct, ECMO volume, desired Hct, and donor Hct.';
+            ['initialHct','desiredHct','donorHct'].forEach(id => {
+                const el = document.getElementById(id);
+                const v = parseFloat(el.value);
+                if (isNaN(v)) el.classList.add('invalid');
+            });
+            return;
+        }
+
+        // Range validation for Hct values (0–100)
+        function isPctValid(v){ return v >= 0 && v <= 100; }
+        // Clear previous invalid styling
+        ['initialHct','desiredHct','donorHct'].forEach(id => document.getElementById(id).classList.remove('invalid'));
+
+        if (!isPctValid(patientHctPct) || !isPctValid(desiredHctPct) || !isPctValid(donorHctPct)) {
+            document.getElementById('donorResult').innerText = 'Hct values must be between 0 and 100%.';
+            if (!isPctValid(patientHctPct)) document.getElementById('initialHct').classList.add('invalid');
+            if (!isPctValid(desiredHctPct)) document.getElementById('desiredHct').classList.add('invalid');
+            if (!isPctValid(donorHctPct)) document.getElementById('donorHct').classList.add('invalid');
+            return;
+        }
+
+        const PBV = bodyWeight * bodyWeightConstant; // patient blood volume in mL
+        const patientHct = patientHctPct / 100.0;
+        const desiredHct = desiredHctPct / 100.0;
+        const donorHct = donorHctPct / 100.0; // user-provided, default 50%
+
+        // Compute donor volume
+        const numerator = ( (PBV + ecmoVolume) * desiredHct ) - ( PBV * patientHct );
+        const donorVolume = numerator / donorHct; // mL
+
+        if (donorVolume < 0) {
+            document.getElementById('donorResult').innerText = 'Desired Hct is lower than current; no donor blood needed.';
+            return;
+        }
+
+        document.getElementById('donorResult').innerText = 'Donor Blood Volume Needed: ' + donorVolume.toFixed(1) + ' mL';
+    }
+
+    function applyConstant(value) {
+        const constantInput = document.getElementById('bodyWeightConstant');
+        constantInput.value = value;
+        constantInput.classList.add('input-flash');
+        setTimeout(() => constantInput.classList.remove('input-flash'), 1000);
+    }
+
+    function suggestForCurrentWeight() {
+        const weightInput = document.getElementById('bodyWeight');
+        const weight = parseFloat(weightInput.value);
+
+        const suggested = computeSuggestedConstant(weight);
+        if (suggested !== null) {
+            applyConstant(suggested);
+        } else {
+            // For <5 kg, prompt user to choose newborn category from reference
+            alert('For weight < 5 kg, please select the appropriate newborn value (15–30 min: 76 mL/kg, 24 hr: 83 mL/kg) from the Reference chart.');
+            openReference();
+        }
+    }
+
+    // Delegate clicks/keys on reference rows
+    (function initReferenceSelection(){
+        const tbody = document.querySelector('#refModal .ref-table tbody');
+        if (!tbody) return;
+        function handlePick(target) {
+            const tr = target.closest('tr');
+            if (!tr) return;
+            const val = parseFloat(tr.getAttribute('data-constant'));
+            if (!isNaN(val)) {
+                applyConstant(val);
+                closeReference();
+            }
+        }
+        tbody.addEventListener('click', function(e){ handlePick(e.target); });
+        tbody.addEventListener('keydown', function(e){
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handlePick(e.target);
+            }
+        });
+    })();
+</script>
+
+</body>
+</html>
