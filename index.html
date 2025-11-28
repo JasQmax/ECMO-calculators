@@ -244,6 +244,53 @@
         .ref-table tbody tr:hover { background-color: #eef6ff; }
         .ref-table tbody tr.suggested { background-color: #e6f0ff; outline: 2px solid #99c2ff; }
 
+     /* Cannula reference hidden by default; shown when .show is applied.
+         Wrap the table in a horizontal-scrolling container for small screens. */
+     .cannula-ref { display: none; }
+     .cannula-ref.show { display: block; }
+
+     /* Scroll wrapper for wide tables (mobile-friendly horizontal scrolling) */
+     .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+     /* Ensure the cannula table preserves columns and scrolls horizontally on small viewports */
+     #cannulaRefTable { min-width: 920px; }
+     #cannulaRefTable th, #cannulaRefTable td { white-space: nowrap; }
+
+    /* Colored fonts and subtle background striping per cannula category for quick scanning */
+    .cannula-type-neck { color: #0b7a44; font-weight: 700; background: rgba(11,122,68,0.06); }
+    .cannula-type-femoral { color: #0b61a6; font-weight: 700; background: rgba(11,97,166,0.06); }
+    .cannula-type-central { color: #6f2da8; font-weight: 700; background: rgba(111,45,168,0.06); }
+    .cannula-type-connector { color: #b36b00; font-weight: 700; background: rgba(179,107,0,0.06); }
+
+    /* Apply subtle background striping to the full guideline table columns
+       (Neck: 2-3, Femoral: 4-5, Central: 6-7, Connector: 8) */
+    #cannulaRefTable th:nth-child(2), #cannulaRefTable td:nth-child(2),
+    #cannulaRefTable th:nth-child(3), #cannulaRefTable td:nth-child(3) {
+        color: #0b7a44;
+        background-color: rgba(11,122,68,0.04);
+    }
+
+    #cannulaRefTable th:nth-child(4), #cannulaRefTable td:nth-child(4),
+    #cannulaRefTable th:nth-child(5), #cannulaRefTable td:nth-child(5) {
+        color: #0b61a6;
+        background-color: rgba(11,97,166,0.04);
+    }
+
+    #cannulaRefTable th:nth-child(6), #cannulaRefTable td:nth-child(6),
+    #cannulaRefTable th:nth-child(7), #cannulaRefTable td:nth-child(7) {
+        color: #6f2da8;
+        background-color: rgba(111,45,168,0.04);
+    }
+
+    #cannulaRefTable th:nth-child(8), #cannulaRefTable td:nth-child(8) {
+        color: #b36b00;
+        background-color: rgba(179,107,0,0.04);
+    }
+
+    /* Ensure compact suggestion cells also show subtle background (labels and values) */
+    .cannula-type-neck[style], .cannula-type-femoral[style], .cannula-type-central[style], .cannula-type-connector[style] {
+        padding-left: 6px; padding-right: 6px; border-radius: 4px;
+    }
+
         /* Subtle flash when field is auto-filled */
         @keyframes flash {
             0% { box-shadow: 0 0 0 3px rgba(0,123,255,0.35); }
@@ -327,7 +374,7 @@
 <div class="app-shell">
     <div class="app-header">
         <h1>ECMO Calculators</h1>
-        <p>Final hematocrit and donor blood volume estimations</p>
+    <p>Final hematocrit and donor blood volume estimations, plus guideline-based cannula size suggestions</p>
     </div>
 
     <div class="calculator">
@@ -335,6 +382,8 @@
     <div style="margin-top:6px;">
         <button type="button" class="ref-btn formula-btn" onclick="openEquation('hct')" aria-haspopup="dialog" aria-controls="eqModal" aria-label="Show formula for Final Hct">ƒ Formula</button>
     </div>
+
+    
     <label for="bodyWeight">Body Weight (kg):</label>
     <input type="number" id="bodyWeight" step="0.1" required>
 
@@ -374,6 +423,61 @@
     <button class="btn-primary" onclick="calculateDonorBloodVolume()" aria-label="Calculate donor blood volume needed">Calculate Donor Blood Volume</button>
 
     <div class="result" id="donorResult" role="status" aria-live="polite"></div>
+    </div>
+
+    <!-- Cannula size suggestion (moved below blood volume calculator) -->
+    <div class="calculator" id="cannulaSection" aria-live="polite">
+        <h2>Cannula Size Suggestion</h2>
+        <p style="margin-top:6px; color:#334155;">Enter a body weight above to see guideline-specified suggested cannula sizes for VA cannulation. These entries are taken from the provided guideline table from Hong Kong Children's Hospital.</p>
+        <div id="cannulaResult" class="result" style="min-height:56px; align-items:flex-start;"></div>
+
+        <!-- Toggle button to show/hide the full guideline table -->
+        <div style="margin-top:8px;margin-bottom:6px;">
+            <button id="toggleCannulaRefBtn" type="button" class="ref-btn" onclick="toggleCannulaReference()" aria-controls="cannulaRefTable" aria-expanded="false">Show reference</button>
+        </div>
+
+        <div class="table-wrapper" style="margin-top:10px;">
+        <table id="cannulaRefTable" class="ref-table cannula-ref">
+            <thead>
+                <tr>
+                    <th>Body weight (kg)</th>
+                    <th>Neck Venous</th>
+                    <th>Neck Arterial</th>
+                    <th>Femoral Venous</th>
+                    <th>Femoral Arterial</th>
+                    <th>Central Venous</th>
+                    <th>Central Arterial</th>
+                    <th>Connector size</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>≤ 2 kg</td><td>10Fr Ven BioMedicus / 11Fr (10.5cm) Ven ECLS</td><td>8Fr DLP</td><td>-</td><td>-</td><td>14Fr DLP</td><td>8Fr DLP</td><td>1/4" (Right Angle)</td></tr>
+                <tr><td>2–2.9 kg</td><td>10Fr Ven BioMedicus / 11Fr (10.5cm) Ven ECLS</td><td>8Fr DLP</td><td>-</td><td>-</td><td>16Fr DLP</td><td>8Fr DLP</td><td>1/4" (Right Angle)</td></tr>
+                <tr><td>3–3.9 kg</td><td>12Fr Ven BioMedicus / 13Fr (11cm) Ven ECLS (LS96110-013)</td><td>10Fr DLP</td><td>-</td><td>-</td><td>16Fr DLP</td><td>10Fr DLP</td><td>1/4" (Right Angle)</td></tr>
+                <tr><td>4–4.9 kg</td><td>12Fr Ven BioMedicus / 13Fr (11cm) Ven ECLS (LS96110-013)</td><td>10Fr DLP</td><td>-</td><td>-</td><td>16Fr DLP</td><td>10Fr DLP</td><td>1/4" (Right Angle)</td></tr>
+                <tr><td>5–5.9 kg</td><td>14Fr Ven BioMedicus / 15Fr (11.5cm) Ven ECLS (LS96110-015)</td><td>10Fr DLP</td><td>-</td><td>-</td><td>18Fr DLP</td><td>12Fr DLP</td><td>1/4" (Right Angle)</td></tr>
+                <tr><td>6–6.9 kg</td><td>14Fr Ven BioMedicus / 15Fr (11.5cm) Ven ECLS (LS96110-015)</td><td>10Fr DLP</td><td>-</td><td>-</td><td>18Fr DLP</td><td>12Fr DLP</td><td>1/4" (Right Angle)</td></tr>
+                <tr><td>7–7.9 kg</td><td>14Fr Ven BioMedicus / 15Fr (11.5cm) Ven ECLS (LS96110-015)</td><td>12Fr DLP</td><td>-</td><td>-</td><td>18Fr DLP</td><td>12Fr DLP</td><td>1/4" (Right Angle)</td></tr>
+                <tr><td>8–8.9 kg</td><td>14Fr Ven BioMedicus / 15Fr (11.5cm) Ven ECLS (LS96110-015)</td><td>12Fr DLP</td><td>-</td><td>-</td><td>18Fr DLP</td><td>12Fr DLP</td><td>1/4" (Right Angle)</td></tr>
+                <tr><td>9–9.9 kg</td><td>14Fr Ven BioMedicus / 15Fr (11.5cm) Ven ECLS (LS96110-015)</td><td>12Fr DLP</td><td>-</td><td>-</td><td>18Fr DLP</td><td>12Fr DLP</td><td>1/4" (Right Angle)</td></tr>
+                <tr><td>10–12 kg</td><td>14Fr Ven BioMedicus / 15Fr (11.5cm) Ven ECLS (LS96110-015)</td><td>12Fr DLP</td><td>15Fr Ven BioMedicus / 15Fr (50cm) Art/Ven ECLS</td><td>13Fr Art HLS</td><td>18Fr DLP</td><td>12Fr DLP</td><td>1/4" (Right Angle)</td></tr>
+                <tr><td>13–14 kg</td><td>15Fr Art HLS</td><td>14Fr DLP</td><td>15Fr Ven BioMedicus / 15Fr (50cm) Art/Ven ECLS</td><td>13Fr Art HLS</td><td>20Fr DLP</td><td>14Fr DLP</td><td>1/4" (Right Angle)</td></tr>
+                <tr><td>15–16 kg</td><td>17Fr Art HLS</td><td>14Fr DLP</td><td>17Fr Ven BioMedicus / 17Fr (50cm) Art/Ven ECLS</td><td>13Fr Art HLS</td><td>22Fr DLP</td><td>14Fr DLP</td><td>1/4" and 3/8"</td></tr>
+                <tr><td>17–18 kg</td><td>19Fr Art HLS</td><td>15Fr Art HLS</td><td>19Fr Ven BioMedicus / 19Fr (55cm) Art/Ven ECLS</td><td>15Fr Art HLS</td><td>22Fr DLP</td><td>14Fr DLP</td><td>3/8"</td></tr>
+                <tr><td>19–20 kg</td><td>19Fr Art Biomedicus / 19Fr (18cm) Art/Ven ECLS</td><td>15Fr Art HLS</td><td>19Fr Ven BioMedicus / 19Fr (55cm) Art/Ven ECLS</td><td>15Fr Art HLS</td><td>24Fr DLP</td><td>16Fr DLP</td><td>3/8"</td></tr>
+                <tr><td>21–25 kg</td><td>19Fr Art Biomedicus / 19Fr (18cm) Art/Ven ECLS</td><td>15Fr Art HLS</td><td>19Fr Ven BioMedicus / 19Fr (55cm) Art/Ven ECLS</td><td>15Fr Art HLS</td><td>24Fr DLP</td><td>16Fr DLP</td><td>3/8"</td></tr>
+                <tr><td>26–30 kg</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>15Fr Art HLS</td><td>21Fr Ven BioMedicus / 21Fr (55cm) Art/Ven ECLS</td><td>15Fr Art HLS</td><td>24Fr DLP</td><td>16Fr DLP</td><td>3/8"</td></tr>
+                <tr><td>31–35 kg</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>15Fr Art HLS</td><td>21Fr Ven BioMedicus / 21Fr (55cm) Art/Ven ECLS</td><td>15Fr Art HLS</td><td>24Fr DLP</td><td>16Fr DLP</td><td>3/8"</td></tr>
+                <tr><td>36–40 kg</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>17Fr Art HLS</td><td>23Fr Ven HLS</td><td>17Fr Art Biomedicus / 17Fr (18cm) Art/Ven ECLS</td><td>28Fr DLP</td><td>16Fr DLP</td><td>3/8"</td></tr>
+                <tr><td>41–45 kg</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>19Fr Art HLS</td><td>25Fr Ven HLS</td><td>19Fr Art Biomedicus / 19Fr (18cm) Art/Ven ECLS</td><td>28Fr DLP</td><td>16Fr DLP</td><td>3/8"</td></tr>
+                <tr><td>46–50 kg</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>19Fr Art HLS</td><td>25Fr Ven HLS</td><td>19Fr Art Biomedicus / 19Fr (18cm) Art/Ven ECLS</td><td>28Fr DLP</td><td>18Fr DLP</td><td>3/8"</td></tr>
+                <tr><td>51–60 kg</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>19Fr Art HLS</td><td>25Fr Ven HLS</td><td>19Fr Art Biomedicus / 19Fr (18cm) Art/Ven ECLS</td><td>28Fr DLP</td><td>20Fr DLP</td><td>3/8"</td></tr>
+                <tr><td>61–65 kg</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>25Fr Ven HLS</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>28Fr DLP</td><td>20Fr DLP</td><td>3/8"</td></tr>
+                <tr><td>66–70 kg</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>25Fr Ven HLS</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>31Fr DLP</td><td>20Fr DLP</td><td>3/8"</td></tr>
+                <tr><td>> 70 kg</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>25Fr Ven HLS</td><td>21Fr Art Biomedicus / 21Fr (18cm) Art/Ven ECLS</td><td>31Fr DLP</td><td>22Fr DLP</td><td>3/8"</td></tr>
+            </tbody>
+        </table>
+        </div>
     </div>
 
     <div class="disclaimer" aria-live="polite">
@@ -677,6 +781,99 @@
         modal.classList.remove('show');
         modal.setAttribute('aria-hidden', 'true');
     }
+
+    // Cannula suggestion logic — updated to reflect the guideline table
+    function getCannulaForWeight(weightKg) {
+        if (isNaN(weightKg) || weightKg <= 0) return null;
+        // Guideline rows (min inclusive, max inclusive where applicable)
+        const table = [
+            { min: 0, max: 2.0, label: '≤ 2 kg', neckVenous: '10Fr Ven BioMedicus / 11Fr (10.5cm) Ven ECLS (LS96110-011)', neckArterial: '8Fr DLP', femoralVenous: '-', femoralArterial: '-', centralVenous: '14Fr DLP', centralArterial: '8Fr DLP', connector: '1/4" (Right Angle)' },
+            { min: 2.0, max: 2.9, label: '2–2.9 kg', neckVenous: '10Fr Ven BioMedicus / 11Fr (10.5cm) Ven ECLS (LS96110-011)', neckArterial: '8Fr DLP', femoralVenous: '-', femoralArterial: '-', centralVenous: '16Fr DLP', centralArterial: '8Fr DLP', connector: '1/4" (Right Angle)' },
+            { min: 3.0, max: 3.9, label: '3–3.9 kg', neckVenous: '12Fr Ven BioMedicus / 13Fr (11cm) Ven ECLS (LS96110-013)', neckArterial: '10Fr DLP', femoralVenous: '-', femoralArterial: '-', centralVenous: '16Fr DLP', centralArterial: '10Fr DLP', connector: '1/4" (Right Angle)' },
+            { min: 4.0, max: 4.9, label: '4–4.9 kg', neckVenous: '12Fr Ven BioMedicus / 13Fr (11cm) Ven ECLS (LS96110-013)', neckArterial: '10Fr DLP', femoralVenous: '-', femoralArterial: '-', centralVenous: '16Fr DLP', centralArterial: '10Fr DLP', connector: '1/4" (Right Angle)' },
+            { min: 5.0, max: 5.9, label: '5–5.9 kg', neckVenous: '14Fr Ven BioMedicus/ 15Fr (11.5cm) Ven ECLS (LS96110-015)', neckArterial: '10Fr DLP', femoralVenous: '-', femoralArterial: '-', centralVenous: '18Fr DLP', centralArterial: '12Fr DLP', connector: '1/4" (Right Angle)' },
+            { min: 6.0, max: 6.9, label: '6–6.9 kg', neckVenous: '14Fr Ven BioMedicus/ 15Fr (11.5cm) Ven ECLS (LS96110-015)', neckArterial: '10Fr DLP', femoralVenous: '-', femoralArterial: '-', centralVenous: '18Fr DLP', centralArterial: '12Fr DLP', connector: '1/4" (Right Angle)' },
+            { min: 7.0, max: 7.9, label: '7–7.9 kg', neckVenous: '14Fr Ven BioMedicus/ 15Fr (11.5cm) Ven ECLS (LS96110-015)', neckArterial: '12Fr DLP', femoralVenous: '-', femoralArterial: '-', centralVenous: '18Fr DLP', centralArterial: '12Fr DLP', connector: '1/4" (Right Angle)' },
+            { min: 8.0, max: 8.9, label: '8–8.9 kg', neckVenous: '14Fr Ven BioMedicus/ 15Fr (11.5cm) Ven ECLS (LS96110-015)', neckArterial: '12Fr DLP', femoralVenous: '-', femoralArterial: '-', centralVenous: '18Fr DLP', centralArterial: '12Fr DLP', connector: '1/4" (Right Angle)' },
+            { min: 9.0, max: 9.9, label: '9–9.9 kg', neckVenous: '14Fr Ven BioMedicus/ 15Fr (11.5cm) Ven ECLS (LS96110-015)', neckArterial: '12Fr DLP', femoralVenous: '-', femoralArterial: '-', centralVenous: '18Fr DLP', centralArterial: '12Fr DLP', connector: '1/4" (Right Angle)' },
+            { min: 10.0, max: 12.0, label: '10–12 kg', neckVenous: '14Fr Ven BioMedicus/ 15Fr (11.5cm) Ven ECLS (LS96110-015)', neckArterial: '12Fr DLP', femoralVenous: '15Fr Ven BioMedicus/ 15Fr (50cm) Art/Ven ECLS', femoralArterial: '13Fr Art HLS', centralVenous: '18Fr DLP', centralArterial: '12Fr DLP', connector: '1/4" (Right Angle)' },
+            { min: 13.0, max: 14.0, label: '13–14 kg', neckVenous: '15Fr Art HLS', neckArterial: '14Fr DLP', femoralVenous: '15Fr Ven BioMedicus/ 15Fr (50cm) Art/Ven ECLS', femoralArterial: '13Fr Art HLS', centralVenous: '20Fr DLP', centralArterial: '14Fr DLP', connector: '1/4" (Right Angle)' },
+            { min: 15.0, max: 16.0, label: '15–16 kg', neckVenous: '17Fr Art HLS', neckArterial: '14Fr DLP', femoralVenous: '17Fr Ven BioMedicus/ 17Fr (50cm) Art/Ven ECLS', femoralArterial: '13Fr Art HLS', centralVenous: '22Fr DLP', centralArterial: '14Fr DLP', connector: '1/4" and 3/8" (Right Angle)' },
+            { min: 17.0, max: 18.0, label: '17–18 kg', neckVenous: '19Fr Art HLS', neckArterial: '15Fr Art HLS', femoralVenous: '19Fr Ven BioMedicus/ 19Fr (55cm) Art/Ven ECLS', femoralArterial: '15Fr Art HLS', centralVenous: '22Fr DLP', centralArterial: '14Fr DLP', connector: '3/8" (Right Angle)' },
+            { min: 19.0, max: 20.0, label: '19–20 kg', neckVenous: '19Fr Art Biomedicus/ 19Fr (18cm) Art/Ven ECLS', neckArterial: '15Fr Art HLS', femoralVenous: '19Fr Ven BioMedicus/ 19Fr (55cm) Art/Ven ECLS', femoralArterial: '15Fr Art HLS', centralVenous: '24Fr DLP', centralArterial: '16Fr DLP', connector: '3/8" (Right Angle)' },
+            { min: 21.0, max: 25.0, label: '21–25 kg', neckVenous: '19Fr Art Biomedicus/ 19Fr (18cm) Art/Ven ECLS', neckArterial: '15Fr Art HLS', femoralVenous: '19Fr Ven BioMedicus/ 19Fr (55cm) Art/Ven ECLS', femoralArterial: '15Fr Art HLS', centralVenous: '24Fr DLP', centralArterial: '16Fr DLP', connector: '3/8" (Right Angle)' },
+            { min: 26.0, max: 30.0, label: '26–30 kg', neckVenous: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', neckArterial: '15Fr Art HLS', femoralVenous: '21Fr Ven BioMedicus/ 21Fr (55cm) Art/Ven ECLS', femoralArterial: '15Fr Art HLS', centralVenous: '24Fr DLP', centralArterial: '16Fr DLP', connector: '3/8" (Right Angle)' },
+            { min: 31.0, max: 35.0, label: '31–35 kg', neckVenous: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', neckArterial: '15Fr Art HLS', femoralVenous: '21Fr Ven BioMedicus/ 21Fr (55cm) Art/Ven ECLS', femoralArterial: '15Fr Art HLS', centralVenous: '24Fr DLP', centralArterial: '16Fr DLP', connector: '3/8" (Right Angle)' },
+            { min: 36.0, max: 40.0, label: '36–40 kg', neckVenous: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', neckArterial: '17Fr Art HLS', femoralVenous: '23Fr Ven HLS', femoralArterial: '17Fr Art Biomedicus/ 17Fr (18cm) Art/Ven ECLS', centralVenous: '28Fr DLP', centralArterial: '16Fr DLP', connector: '3/8" (Right Angle)' },
+            { min: 41.0, max: 45.0, label: '41–45 kg', neckVenous: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', neckArterial: '19Fr Art HLS', femoralVenous: '25Fr Ven HLS', femoralArterial: '19Fr Art Biomedicus/ 19Fr (18cm) Art/Ven ECLS', centralVenous: '28Fr DLP', centralArterial: '16Fr DLP', connector: '3/8" (Right Angle)' },
+            { min: 46.0, max: 50.0, label: '46–50 kg', neckVenous: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', neckArterial: '19Fr Art HLS', femoralVenous: '25Fr Ven HLS', femoralArterial: '19Fr Art Biomedicus/ 19Fr (18cm) Art/Ven ECLS', centralVenous: '28Fr DLP', centralArterial: '18Fr DLP', connector: '3/8" (Right Angle)' },
+            { min: 51.0, max: 60.0, label: '51–60 kg', neckVenous: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', neckArterial: '19Fr Art HLS', femoralVenous: '25Fr Ven HLS', femoralArterial: '19Fr Art Biomedicus/ 19Fr (18cm) Art/Ven ECLS', centralVenous: '28Fr DLP', centralArterial: '20Fr DLP', connector: '3/8" (Right Angle)' },
+            { min: 61.0, max: 65.0, label: '61–65 kg', neckVenous: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', neckArterial: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', femoralVenous: '25Fr Ven HLS', femoralArterial: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', centralVenous: '28Fr DLP', centralArterial: '20Fr DLP', connector: '3/8" (Right Angle)' },
+            { min: 66.0, max: 70.0, label: '66–70 kg', neckVenous: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', neckArterial: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', femoralVenous: '25Fr Ven HLS', femoralArterial: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', centralVenous: '31Fr DLP', centralArterial: '20Fr DLP', connector: '3/8" (Right Angle)' },
+            { min: 70.0, max: Infinity, label: '> 70 kg', neckVenous: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', neckArterial: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', femoralVenous: '25Fr Ven HLS', femoralArterial: '21Fr Art Biomedicus/ 21Fr (18cm) Art/Ven ECLS', centralVenous: '31Fr DLP', centralArterial: '22Fr DLP', connector: '3/8" (Right Angle)' }
+        ];
+
+        for (const row of table) {
+            if (weightKg >= row.min && weightKg <= row.max) return row;
+        }
+        return null;
+    }
+
+    function updateCannulaSuggestion() {
+        const weightEl = document.getElementById('bodyWeight');
+        const out = document.getElementById('cannulaResult');
+        if (!out || !weightEl) return;
+        const w = parseFloat(weightEl.value);
+        const s = getCannulaForWeight(w);
+        if (!s) {
+            out.classList.remove('result--warning');
+            out.innerHTML = 'Enter a valid body weight (kg) above to see suggested cannula sizes.';
+            return;
+        }
+        out.classList.remove('result--warning');
+        // Build a compact HTML representation of the guideline row
+        out.innerHTML = `
+            <div style="width:100%;">
+                <div style="font-weight:700;margin-bottom:6px;">Guideline suggested cannula sizes for ${s.label}</div>
+                <table style="width:100%;border-collapse:collapse;font-size:0.95em;">
+                    <tbody>
+                        <tr><td class="cannula-type-neck" style="padding:4px 6px;border-bottom:1px solid #edf2f7;width:34%">Neck — Venous</td><td class="cannula-type-neck" style="padding:4px 6px;border-bottom:1px solid #edf2f7">${s.neckVenous}</td></tr>
+                        <tr><td class="cannula-type-neck" style="padding:4px 6px;border-bottom:1px solid #edf2f7">Neck — Arterial</td><td class="cannula-type-neck" style="padding:4px 6px;border-bottom:1px solid #edf2f7">${s.neckArterial}</td></tr>
+                        <tr><td class="cannula-type-femoral" style="padding:4px 6px;border-bottom:1px solid #edf2f7">Femoral — Venous</td><td class="cannula-type-femoral" style="padding:4px 6px;border-bottom:1px solid #edf2f7">${s.femoralVenous}</td></tr>
+                        <tr><td class="cannula-type-femoral" style="padding:4px 6px;border-bottom:1px solid #edf2f7">Femoral — Arterial</td><td class="cannula-type-femoral" style="padding:4px 6px;border-bottom:1px solid #edf2f7">${s.femoralArterial}</td></tr>
+                        <tr><td class="cannula-type-central" style="padding:4px 6px;border-bottom:1px solid #edf2f7">Central — Venous</td><td class="cannula-type-central" style="padding:4px 6px;border-bottom:1px solid #edf2f7">${s.centralVenous}</td></tr>
+                        <tr><td class="cannula-type-central" style="padding:4px 6px;border-bottom:1px solid #edf2f7">Central — Arterial</td><td class="cannula-type-central" style="padding:4px 6px;border-bottom:1px solid #edf2f7">${s.centralArterial}</td></tr>
+                        <tr><td class="cannula-type-connector" style="padding:4px 6px;">Connector</td><td class="cannula-type-connector" style="padding:4px 6px;">${s.connector}</td></tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:8px;font-size:0.88em;color:#374151;">Note: these entries are taken from the provided guideline table. Confirm fit with vessel size and institutional protocols before use.</div>
+            </div>`;
+    }
+
+    // Toggle visibility of the detailed cannula reference table
+    function toggleCannulaReference() {
+        const table = document.getElementById('cannulaRefTable');
+        const btn = document.getElementById('toggleCannulaRefBtn');
+        if (!table || !btn) return;
+        const isShown = table.classList.toggle('show');
+        btn.setAttribute('aria-expanded', String(isShown));
+        btn.innerText = isShown ? 'Hide reference' : 'Show reference';
+        if (isShown) {
+            // move focus to the table for screen-reader users
+            setTimeout(() => table.querySelector('tbody tr')?.focus?.(), 50);
+        } else {
+            btn.focus();
+        }
+    }
+
+    // Attach listener to weight input for live suggestions
+    (function initCannulaWatcher(){
+        const weightEl = document.getElementById('bodyWeight');
+        if (!weightEl) return;
+        weightEl.addEventListener('input', updateCannulaSuggestion);
+        // initialize on load
+        setTimeout(updateCannulaSuggestion, 0);
+    })();
 </script>
 
 </body>
