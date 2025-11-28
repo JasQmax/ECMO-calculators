@@ -251,9 +251,28 @@
 
      /* Scroll wrapper for wide tables (mobile-friendly horizontal scrolling) */
      .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-     /* Ensure the cannula table preserves columns and scrolls horizontally on small viewports */
-     #cannulaRefTable { min-width: 920px; }
-     #cannulaRefTable th, #cannulaRefTable td { white-space: nowrap; }
+    /* Ensure the cannula table preserves columns and scrolls horizontally on small viewports */
+     #cannulaRefTable { min-width: 920px; font-size: 0.88em; }
+     /* Slightly reduce padding in the large guideline table so it fits better on small screens */
+     #cannulaRefTable th, #cannulaRefTable td { white-space: nowrap; padding: 6px 8px; }
+
+    /* Back-to-top floating button */
+    #backToTop {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 1100;
+        display: none; /* shown via JS when user scrolls down */
+        background: #007bff;
+        color: #fff;
+        border: none;
+        padding: 10px 12px;
+        border-radius: 999px;
+        box-shadow: 0 6px 16px rgba(8,61,119,0.18);
+        cursor: pointer;
+        font-size: 1.05em;
+    }
+    #backToTop:focus { outline: 3px solid rgba(0,123,255,0.25); }
 
     /* Colored fonts and subtle background striping per cannula category for quick scanning */
     .cannula-type-neck { color: #0b7a44; font-weight: 700; background: rgba(11,122,68,0.06); }
@@ -480,8 +499,11 @@
         </div>
     </div>
 
+    <!-- Back to top button -->
+    <button id="backToTop" aria-label="Back to top">↑</button>
+
     <div class="disclaimer" aria-live="polite">
-        <strong>Medical disclaimer:</strong> This calculator is provided for informational purposes only and does not constitute medical advice, diagnosis, or treatment. Results are approximate and may not account for clinical context or patient-specific factors. Always consult a qualified healthcare professional and follow institutional protocols before making clinical decisions. The authors assume no liability for outcomes based on use of this tool.
+        <strong>Medical disclaimer:</strong> This calculator is provided for informational purposes only and does not constitute medical advice or treatment. Results are approximate and may not account for clinical context or patient-specific factors. Always consult a qualified healthcare professional and follow institutional protocols before making clinical decisions. The authors assume no liability for outcomes based on use of this tool.
     </div>
     <div class="app-footer">
         <a href="https://jasqmax.github.io/ECMO-calculators/">ECMO calculator</a> © 2025 by Jasmin Tong is licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>
@@ -819,6 +841,43 @@
         return null;
     }
 
+        // Highlight the matching row in the cannula reference table based on current body weight
+        function highlightCannulaReferenceForWeight() {
+            const weight = parseFloat(document.getElementById('bodyWeight').value);
+            const table = document.getElementById('cannulaRefTable');
+            if (!table) return null;
+            const tbody = table.querySelector('tbody');
+            if (!tbody) return null;
+
+            // Make rows focusable for accessibility (if not already)
+            Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+                if (!tr.hasAttribute('tabindex')) tr.setAttribute('tabindex', '0');
+                tr.classList.remove('suggested');
+            });
+
+            if (isNaN(weight) || weight <= 0) return null;
+
+            const s = getCannulaForWeight(weight);
+            if (!s) return null;
+
+            // Find the row whose first cell text matches the label from the mapping
+            const match = Array.from(tbody.querySelectorAll('tr')).find(tr => {
+                const first = tr.querySelector('td');
+                if (!first) return false;
+                return first.textContent.trim() === s.label;
+            });
+
+            if (match) {
+                match.classList.add('suggested');
+                // If table is visible, move focus to the matched row for screen-reader users
+                if (table.classList.contains('show')) {
+                    setTimeout(() => match.focus(), 50);
+                }
+                return match;
+            }
+            return null;
+        }
+
     function updateCannulaSuggestion() {
         const weightEl = document.getElementById('bodyWeight');
         const out = document.getElementById('cannulaResult');
@@ -848,6 +907,8 @@
                 </table>
                 <div style="margin-top:8px;font-size:0.88em;color:#374151;">Note: these entries are taken from the provided guideline table. Confirm fit with vessel size and institutional protocols before use.</div>
             </div>`;
+    // Also highlight the corresponding row in the full cannula reference table (if present)
+    try { highlightCannulaReferenceForWeight(); } catch(e) { /* ignore */ }
     }
 
     // Toggle visibility of the detailed cannula reference table
@@ -859,8 +920,11 @@
         btn.setAttribute('aria-expanded', String(isShown));
         btn.innerText = isShown ? 'Hide reference' : 'Show reference';
         if (isShown) {
-            // move focus to the table for screen-reader users
-            setTimeout(() => table.querySelector('tbody tr')?.focus?.(), 50);
+            // highlight and move focus to the matched row for screen-reader users
+            const matched = highlightCannulaReferenceForWeight();
+            if (!matched) {
+                setTimeout(() => table.querySelector('tbody tr')?.focus?.(), 50);
+            }
         } else {
             btn.focus();
         }
@@ -874,6 +938,30 @@
         // initialize on load
         setTimeout(updateCannulaSuggestion, 0);
     })();
+
+    // Back-to-top button behavior: show on scroll, smooth-scroll to top on click
+    function initBackToTop() {
+        const btn = document.getElementById('backToTop');
+        if (!btn) return;
+        // Show button when user scrolls down 240px
+        function onScroll() {
+            if (window.scrollY > 240) {
+                btn.style.display = 'block';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+        // Smooth scroll to top
+        btn.addEventListener('click', function(){
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            btn.blur();
+        });
+        window.addEventListener('scroll', onScroll, { passive: true });
+        // initialize visibility
+        onScroll();
+    }
+    // Initialize back-to-top after DOM is ready
+    setTimeout(initBackToTop, 0);
 </script>
 
 </body>
